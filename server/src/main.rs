@@ -4,10 +4,10 @@ use tower_http::cors::CorsLayer;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
-use hearth::app::AppState;
-use hearth::core::config::Config;
-use hearth::core::db;
-use hearth::core::storage;
+use irori::app::AppState;
+use irori::core::config::Config;
+use irori::core::db;
+use irori::core::storage;
 
 #[derive(Parser)]
 #[command(name = "hearth", about = "A shared hub for your memories and collections")]
@@ -112,7 +112,7 @@ async fn run_server(cfg: Config, host: &str, port: u16) {
     });
 
     // Build router
-    let app = hearth::api::router(app_state.clone())
+    let app = irori::api::router(app_state.clone())
         .layer(CorsLayer::permissive());
 
     // Bind and serve

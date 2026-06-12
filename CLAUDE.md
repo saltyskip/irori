@@ -1,15 +1,17 @@
-# Hearth Development Guide
+# Irori (囲炉裏) Development Guide
 
 **Stack:** Rust, Axum, PostgreSQL, Protocol-based sync
 
+> *Like the traditional Japanese irori—a sunken hearth at the center of the home—our architecture has a warm center where memories and logic converge, with clear paths for different transport layers to approach it.*
+
 ## Architecture
 
-Hearth separates **domain logic** (business rules) from **transport layers** (how clients communicate):
+Irori separates **domain logic** (business rules) from **transport layers** (how clients communicate):
 
 - **`services/`** — Transport-agnostic business logic. No knowledge of HTTP, MCP, or sync protocol. Each domain (resources, collections, sharing, users) has trait definitions.
 - **`api/`** — HTTP transport layer. Thin wrappers that extract HTTP params, call service methods, return JSON responses.
 - **`mcp/`** — MCP protocol transport. Same pattern: thin wrappers around service methods.
-- **`app.rs`** — `AppState` struct, shared across all transports.
+- **`app.rs`** — `AppState` struct, shared across all transports (the irori's flame).
 - **`core/`** — Infrastructure only: database connections, storage backends, config. No business logic.
 
 **Key rule: Transport layers must not import from each other.** Both `api/` and `mcp/` import from `services/`, but never from each other.
@@ -47,7 +49,7 @@ pub trait SyncProtocol: Send + Sync {
 ```
 
 Implementations:
-- `HearthSyncProtocol` — Default efficient protocol
+- `IroriSyncProtocol` — Default efficient protocol
 - `ImmichSyncProtocol` — Compatibility layer for Immich clients
 
 Both are wired at startup via config.
@@ -155,7 +157,7 @@ orbstack start
 docker-compose up
 
 # View logs
-docker-compose logs -f hearth
+docker-compose logs -f irori
 ```
 
 The Dockerfile uses multi-stage build (builder → runtime) to keep the final image small.

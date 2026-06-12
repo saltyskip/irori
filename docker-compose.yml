@@ -3,33 +3,33 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: hearth-postgres
+    container_name: irori-postgres
     environment:
-      POSTGRES_USER: hearth
-      POSTGRES_PASSWORD: hearth-dev
-      POSTGRES_DB: hearth
+      POSTGRES_USER: irori
+      POSTGRES_PASSWORD: irori-dev
+      POSTGRES_DB: irori
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hearth"]
+      test: ["CMD-SHELL", "pg_isready -U irori"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  hearth:
+  irori:
     build:
       context: .
       dockerfile: server/Dockerfile
-    container_name: hearth-server
+    container_name: irori-server
     ports:
       - "3000:3000"
     environment:
-      DATABASE_URL: postgres://hearth:hearth-dev@postgres:5432/hearth
+      DATABASE_URL: postgres://irori:irori-dev@postgres:5432/irori
       STORAGE_BACKEND: local
       STORAGE_PATH: /data/storage
-      RUST_LOG: hearth=debug,tower_http=info
+      RUST_LOG: irori=debug,tower_http=info
       ENVIRONMENT: development
       API_BASE_URL: http://localhost:3000
       JWT_SECRET: dev-secret-change-in-production

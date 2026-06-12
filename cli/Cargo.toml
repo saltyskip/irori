@@ -1,5 +1,5 @@
 [package]
-name = "hearth-cli"
+name = "irori-cli"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

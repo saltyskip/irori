@@ -1,22 +1,27 @@
-# Hearth
+# Irori 囲炉裏
 
-A shared hub for your memories and collections. Built in Rust with Axum, PostgreSQL, and a protocol-based sync system.
+*A shared flame for your memories and collections.*
+
+Irori is a family-first photo and media repository, built in Rust. Named after the traditional Japanese sunken hearth—a gathering place where families shared stories and warmth. Like the irori itself, Irori is designed to be the center of your home: the place where memories converge.
+
+Built with Axum, PostgreSQL, and a protocol-based sync system that respects your privacy and lets you sync across devices, on your own infrastructure.
 
 ## Vision
 
-Hearth is a extensible platform for shared repositories of any kind. v1 focuses on family photo libraries, but the architecture is designed to support music libraries, document vaults, and more.
+Irori is an extensible platform for shared repositories of any kind. v1 focuses on family photo libraries, but the architecture is designed to support music libraries, document vaults, family trees, and more.
 
-**Key features:**
-- 🔄 Protocol-based sync (pluggable implementations)
-- 👥 Family-first sharing with roles and permissions
-- 📦 Flexible storage (NAS, local, S3-compatible)
-- 🚀 Built for performance in Rust
-- 🔌 Extensible service layer via traits
+**Core principles:**
+- 👨‍👩‍👧‍👦 **Family-first** — Built for multi-generational sharing
+- 🔄 **Protocol-based sync** — Pluggable implementations (native + Immich-compatible)
+- 📦 **Flexible storage** — NAS (your UNASPro), local, or S3-compatible
+- 🚀 **Performance** — Written in Rust for speed and safety
+- 🔌 **Extensible** — Service layer via traits, swap implementations freely
+- 🏠 **Self-hosted** — Keep your memories on your own infrastructure
 
 ## Architecture
 
 ```
-hearth-rust/
+irori/
 ├── server/           # Axum API + business logic
 │   ├── src/
 │   │   ├── api/      # HTTP transport (thin wrappers)
@@ -30,16 +35,16 @@ hearth-rust/
 
 ### Service Layer (Transport-Agnostic)
 
-- **resources** — Upload, download, list files/photos/documents
-- **collections** — Organize resources into albums, playlists, folders
-- **sharing** — Invite members, assign roles (owner/editor/viewer)
-- **sync** — Protocol abstraction (Hearth protocol + Immich compatibility)
-- **users** — Registration, authentication, profiles
+- **resources** — Upload, download, list files/photos/videos/documents
+- **collections** — Organize resources into albums, playlists, folders, galleries
+- **sharing** — Invite family members, assign roles (owner/editor/viewer)
+- **sync** — Protocol abstraction (Irori protocol + Immich compatibility)
+- **users** — Registration, authentication, family profiles
 
 ### Transport Layers
 
-- **HTTP API** (`src/api/`) — REST endpoints
-- **MCP** (`src/mcp/`) — Claude/AI integration
+- **HTTP API** (`src/api/`) — REST endpoints for web and mobile clients
+- **MCP** (`src/mcp/`) — Claude/AI agent integration
 - Both import from `services/`, never from each other
 
 ## Setup
@@ -49,12 +54,13 @@ hearth-rust/
 - Rust 1.81+
 - PostgreSQL 14+
 - OrbStack or Docker
+- (Optional) UNASPro or NFS-mounted NAS
 
 ### Development
 
 ```bash
 # Clone
-cd /Users/andreiterentiev/Developer/hearth-rust
+cd /Users/andreiterentiev/Developer/irori
 
 # Start database + server with OrbStack
 orbstack start
@@ -63,24 +69,25 @@ docker-compose up
 # In another terminal, run migrations
 cargo run -- migrate --name m001_init_schema --apply
 
-# Start server
+# Start server (default: http://localhost:3000)
 cargo run -- serve
 ```
 
-Server will be available at `http://localhost:3000`
-
-Health check: `curl http://localhost:3000/health`
+Health check:
+```bash
+curl http://localhost:3000/health
+```
 
 ### Configuration
 
 Set environment variables (or use `.env`):
 
 ```bash
-DATABASE_URL=postgres://hearth:hearth-dev@localhost/hearth
+DATABASE_URL=postgres://irori:irori-dev@localhost/irori
 STORAGE_BACKEND=local
-STORAGE_PATH=/tmp/hearth-storage
+STORAGE_PATH=/tmp/irori-storage
 NAS_MOUNT_PATH=/mnt/immich-nas (optional)
-SYNC_PROTOCOL=hearth (or "immich" for compatibility)
+SYNC_PROTOCOL=irori (or "immich" for compatibility)
 JWT_SECRET=dev-secret-change-in-production
 ```
 
@@ -88,28 +95,24 @@ JWT_SECRET=dev-secret-change-in-production
 
 ```bash
 # Initialize client
-hearth init --server http://localhost:3000 --email alice@family.com
+irori init --server http://localhost:3000 --email alice@family.com
 
 # Watch directory for sync
-hearth watch ~/Pictures --collection "Family Photos"
+irori watch ~/Pictures --collection "Family Photos"
 
 # List collections
-hearth list
+irori list
 
 # Invite family member
-hearth invite bob@family.com --collection "Summer 2024" --role viewer
+irori invite bob@family.com --collection "Summer 2024" --role viewer
 
 # Show sync status
-hearth status
+irori status
 ```
-
-## API Documentation
-
-Once the server is running, visit `http://localhost:3000/docs` for interactive OpenAPI docs.
 
 ## Sync Protocol
 
-Hearth uses a pluggable sync protocol. The default implementation is designed for efficient multi-device sync:
+Irori uses a pluggable sync protocol optimized for multi-device family use:
 
 - **Identify** — Client introduces itself
 - **Fetch changes** — Get delta since last sync (cursor-based)
@@ -120,8 +123,8 @@ See `PROTOCOL.md` for detailed spec.
 
 ### Protocol Implementations
 
-- **Hearth** (default) — Optimized for multi-device family use
-- **Immich** — Compatible with Immich's sync protocol (allows migration)
+- **Irori** (default) — Optimized for multi-device family use
+- **Immich** — Compatible with Immich's sync protocol (allows data migration)
 
 ## NAS Integration
 
@@ -139,7 +142,7 @@ STORAGE_BACKEND=nas
 The storage backend is pluggable (`core/storage.rs`). Current implementations:
 
 - `LocalStorage` — Filesystem (development)
-- `NasStorage` — NFS mount (production)
+- `NasStorage` — NFS mount (production, your use case)
 - `S3Storage` — Coming soon
 
 ## Testing
@@ -162,6 +165,21 @@ See `CLAUDE.md` for:
 - Service layer patterns
 - Testing conventions
 - Git workflows
+
+## Roadmap
+
+- ✅ Service trait definitions
+- ✅ Storage abstraction (NAS-first)
+- ✅ Basic API scaffold
+- ⏳ **Phase 1** — Resource upload/download, collections, basic sync
+- ⏳ **Phase 2** — Multi-user sharing, family roles, MCP tools
+- ⏳ **Phase 3** — Advanced search, tagging, timeline views
+- ⏳ **Phase 4** — Mobile app (iOS/Android via Tauri or native)
+- ⏳ **Phase 5** — Web UI (React)
+
+## Why "Irori"?
+
+囲炉裏 (irori) is a traditional Japanese sunken hearth, central to the Japanese home. Families gathered around it for warmth, cooking, and stories. It's the heart of the home—just like this project aspires to be the heart of your family's digital memories.
 
 ## License
 
