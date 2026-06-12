@@ -19,7 +19,9 @@ pub mod services {
 }
 
 // Transport layers
+#[cfg(feature = "api")]
 pub mod api;
+#[cfg(feature = "mcp")]
 pub mod mcp;
 
 // Utilities

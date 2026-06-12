@@ -11,6 +11,7 @@ pub struct HealthResponse {
 }
 
 /// Health check endpoint
+#[tracing::instrument(skip_all)]
 pub async fn health(State(_state): State<Arc<AppState>>) -> Json<HealthResponse> {
     Json(HealthResponse {
         status: "ok".to_string(),
@@ -19,6 +20,7 @@ pub async fn health(State(_state): State<Arc<AppState>>) -> Json<HealthResponse>
 }
 
 /// Readiness check (includes database)
+#[tracing::instrument(skip_all)]
 pub async fn readiness(State(state): State<Arc<AppState>>) -> Result<Json<HealthResponse>, StatusCode> {
     // Try to check database connection
     sqlx::query("SELECT 1")

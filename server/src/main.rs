@@ -10,7 +10,7 @@ use irori::core::db;
 use irori::core::storage;
 
 #[derive(Parser)]
-#[command(name = "hearth", about = "A shared hub for your memories and collections")]
+#[command(name = "irori", about = "A shared hub for your memories and collections")]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -52,7 +52,7 @@ async fn main() {
 
     // Initialize tracing
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        EnvFilter::new("hearth=info,tower_http=warn,hyper=warn,sqlx=warn")
+        EnvFilter::new("irori=info,tower_http=warn,hyper=warn,sqlx=warn")
     });
     tracing_subscriber::registry()
         .with(env_filter)
@@ -77,17 +77,30 @@ async fn main() {
         Some(Command::Serve { host, port }) => {
             let host = host.unwrap_or_else(|| "0.0.0.0".to_string());
             let port = port.unwrap_or(3000);
+            #[cfg(feature = "api")]
             run_server(cfg, &host, port).await;
+            #[cfg(not(feature = "api"))]
+            {
+                eprintln!("Server requires 'api' feature. Run with: cargo run --features api");
+                std::process::exit(1);
+            }
         }
         None => {
             // Default: run server
+            #[cfg(feature = "api")]
             run_server(cfg, "0.0.0.0", 3000).await;
+            #[cfg(not(feature = "api"))]
+            {
+                eprintln!("Server requires 'api' feature. Run with: cargo run --features api");
+                std::process::exit(1);
+            }
         }
     }
 }
 
+#[cfg(feature = "api")]
 async fn run_server(cfg: Config, host: &str, port: u16) {
-    tracing::info!("Starting Hearth server at {}:{}", host, port);
+    tracing::info!("Starting Irori server at {}:{}", host, port);
 
     // Connect to database
     let pool = match db::connect(&cfg.database_url).await {
