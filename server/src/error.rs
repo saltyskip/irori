@@ -66,3 +66,10 @@ impl From<sqlx::Error> for Error {
         Error::Database(err.to_string())
     }
 }
+
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        tracing::error!("IO error: {:?}", err);
+        Error::Storage(err.to_string())
+    }
+}

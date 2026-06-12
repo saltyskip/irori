@@ -1,7 +1,6 @@
 use clap::{Parser, Subcommand};
 use std::sync::Arc;
-use tower_http::cors::{AllowHeaders, AllowMethods, AllowOrigin, CorsLayer};
-use tower_http::limit::RequestBodyLimitLayer;
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 
@@ -109,18 +108,12 @@ async fn run_server(cfg: Config, host: &str, port: u16) {
     let app_state = Arc::new(AppState {
         db_pool: pool,
         config: cfg,
-        storage: storage_backend,
+        storage: Arc::new(storage_backend),
     });
 
     // Build router
     let app = hearth::api::router(app_state.clone())
-        .layer(RequestBodyLimitLayer::max(512 * 1024 * 1024)) // 512MB max
-        .layer(
-            CorsLayer::permissive()
-                .allow_origin(AllowOrigin::predicate(|_, _| true))
-                .allow_methods(AllowMethods::all())
-                .allow_headers(AllowHeaders::all()),
-        );
+        .layer(CorsLayer::permissive());
 
     // Bind and serve
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))

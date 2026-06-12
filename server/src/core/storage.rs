@@ -5,6 +5,9 @@ use tokio::fs;
 use crate::core::config::Config;
 use crate::Result;
 
+#[derive(Debug)]
+pub struct StorageError(pub String);
+
 #[async_trait]
 pub trait StorageBackend: Send + Sync {
     /// Upload file to storage backend

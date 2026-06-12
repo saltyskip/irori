@@ -43,8 +43,8 @@ hex = "0.4"
 ed25519-dalek = { version = "2", features = ["rand_core"] }
 jsonwebtoken = "9"
 
-# Logging & Monitoring
-sentry = { version = "0.33", features = ["tower-axum-matched-path", "tracing"] }
+# Logging & Monitoring (Sentry disabled for now due to dependency conflicts)
+# sentry = { version = "0.33", features = ["tower-axum-matched-path", "tracing"] }
 
 # Caching
 cached = { version = "0.54", features = ["async"] }
