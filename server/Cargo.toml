@@ -6,11 +6,11 @@ authors.workspace = true
 license.workspace = true
 
 [[bin]]
-name = "hearth"
+name = "irori"
 path = "src/main.rs"
 
 [lib]
-name = "hearth"
+name = "irori"
 path = "src/lib.rs"
 
 [dependencies]
