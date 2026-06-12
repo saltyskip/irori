@@ -1,27 +1,9 @@
+pub mod models;
+
 use async_trait::async_trait;
 use uuid::Uuid;
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Role {
-    Owner,
-    Editor,
-    Viewer,
-}
-
-#[derive(Clone, Debug)]
-pub struct Member {
-    pub id: Uuid,
-    pub collection_id: Uuid,
-    pub user_id: Uuid,
-    pub role: Role,
-    pub joined_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Clone)]
-pub struct AddMemberRequest {
-    pub user_id: Uuid,
-    pub role: Role,
-}
+pub use models::{AddMemberRequest, Member, Role};
 
 #[async_trait]
 pub trait SharingService: Send + Sync {

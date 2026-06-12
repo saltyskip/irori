@@ -1,27 +1,9 @@
+pub mod models;
+
 use async_trait::async_trait;
 use uuid::Uuid;
 
-#[derive(Clone, Debug)]
-pub struct Resource {
-    pub id: Uuid,
-    pub user_id: Uuid,
-    pub name: String,
-    pub resource_type: String, // "photo", "video", "document", etc.
-    pub size_bytes: Option<i64>,
-    pub mime_type: Option<String>,
-    pub storage_path: String,
-    pub metadata: Option<serde_json::Value>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Clone)]
-pub struct UploadRequest {
-    pub name: String,
-    pub resource_type: String,
-    pub mime_type: Option<String>,
-    pub data: Vec<u8>,
-}
+pub use models::{Resource, UploadRequest};
 
 #[async_trait]
 pub trait ResourceService: Send + Sync {

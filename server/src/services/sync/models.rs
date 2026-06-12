@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -61,47 +60,10 @@ pub struct ConflictInfo {
 }
 
 /// File upload/download handle
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileHandle {
     pub id: Uuid,
     pub path: String,
     pub size: u64,
     pub checksum: String,
-}
-
-/// Pluggable sync protocol implementation
-#[async_trait]
-pub trait SyncProtocol: Send + Sync {
-    /// Identify the client
-    async fn identify(&self, auth: &str, client_state: ClientState) -> crate::Result<ClientState>;
-
-    /// Get changes since last sync
-    async fn fetch_changes(
-        &self,
-        user_id: Uuid,
-        cursor: Option<&str>,
-        limit: i32,
-    ) -> crate::Result<ChangeSet>;
-
-    /// Push local changes to server
-    async fn push_changes(
-        &self,
-        user_id: Uuid,
-        changes: Vec<LocalChange>,
-    ) -> crate::Result<SyncAck>;
-
-    /// Upload file
-    async fn upload_file(
-        &self,
-        user_id: Uuid,
-        name: String,
-        data: Vec<u8>,
-    ) -> crate::Result<FileHandle>;
-
-    /// Download file
-    async fn download_file(
-        &self,
-        user_id: Uuid,
-        file_id: Uuid,
-    ) -> crate::Result<Vec<u8>>;
 }

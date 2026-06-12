@@ -1,33 +1,9 @@
+pub mod models;
+
 use async_trait::async_trait;
 use uuid::Uuid;
 
-#[derive(Clone, Debug)]
-pub struct User {
-    pub id: Uuid,
-    pub email: String,
-    pub name: Option<String>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Clone)]
-pub struct RegisterRequest {
-    pub email: String,
-    pub password: String,
-    pub name: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct LoginRequest {
-    pub email: String,
-    pub password: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct LoginResponse {
-    pub user: User,
-    pub token: String,
-}
+pub use models::{LoginRequest, LoginResponse, RegisterRequest, User};
 
 #[async_trait]
 pub trait UserService: Send + Sync {

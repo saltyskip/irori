@@ -1,27 +1,9 @@
+pub mod models;
+
 use async_trait::async_trait;
 use uuid::Uuid;
 
-#[derive(Clone, Debug)]
-pub struct Collection {
-    pub id: Uuid,
-    pub owner_id: Uuid,
-    pub name: String,
-    pub description: Option<String>,
-    pub created_at: chrono::DateTime<chrono::Utc>,
-    pub updated_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug, Clone)]
-pub struct CreateCollectionRequest {
-    pub name: String,
-    pub description: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct UpdateCollectionRequest {
-    pub name: Option<String>,
-    pub description: Option<String>,
-}
+pub use models::{Collection, CreateCollectionRequest, UpdateCollectionRequest};
 
 #[async_trait]
 pub trait CollectionService: Send + Sync {
