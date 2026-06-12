@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hearth-postgres
+    environment:
+      POSTGRES_USER: hearth
+      POSTGRES_PASSWORD: hearth-dev
+      POSTGRES_DB: hearth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hearth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  hearth:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    container_name: hearth-server
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://hearth:hearth-dev@postgres:5432/hearth
+      STORAGE_BACKEND: local
+      STORAGE_PATH: /data/storage
+      RUST_LOG: hearth=debug,tower_http=info
+      ENVIRONMENT: development
+      API_BASE_URL: http://localhost:3000
+      JWT_SECRET: dev-secret-change-in-production
+    volumes:
+      # NAS mount (adjust path to your UNASPro mount)
+      # - /mnt/immich-nas:/data/nas:ro
+
+      # Local storage
+      - ./storage:/data/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: cargo run --release
+
+volumes:
+  postgres_data:
