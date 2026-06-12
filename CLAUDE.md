@@ -4,6 +4,19 @@
 
 > *Like the traditional Japanese irori—a sunken hearth at the center of the home—our architecture has a warm center where memories and logic converge, with clear paths for different transport layers to approach it.*
 
+## Backlog & Followup Work
+
+When you identify a meaningful improvement, bug, or refactor that is **out of scope for the current task**, surface it to the user and **ask whether to file a GitHub issue**. Do not:
+
+- File issues unilaterally — issue spam pollutes the tracker; the user decides what's worth tracking
+- Bury it in a `TODO` comment that nobody re-reads
+- Bolt it onto the current PR as "while I'm here" scope creep
+- Leave it unmentioned
+
+**Pattern:** "I noticed [thing]. This matters because [why]. Want me to file an issue?"
+
+**Exception:** A `TODO:` comment is acceptable when it points at a very specific tactical follow-up tightly coupled to the surrounding code (e.g., "TODO: move to service layer when MCP or another transport consumes this"). It is NOT acceptable for open-ended ideas or anything requiring more than ~10 lines to act on.
+
 ## Architecture
 
 Irori separates **domain logic** (business rules) from **transport layers** (how clients communicate):
@@ -180,6 +193,37 @@ Run with: `cargo test`
 - **No `panic!` in libraries** — Return `Err` instead
 - **Logging** — Use `tracing::info!`, `tracing::error!`
 
+## Style Guidelines
+
+- **Iterators over loops** — Use `filter_map`, `map`, `collect` instead of imperative loops
+- **Early returns** — Use `?` operator, `let-else` for pattern matching with early exit
+- **Flatten** — Use `.ok()`, `.and_then()`, and chains over nested matches
+- **No `#[allow(...)]` suppressions** — Fix the root cause instead:
+  - Unused imports → remove them
+  - Too many arguments → use a struct or builder pattern
+  - Dead code → delete it (mark as `#[allow(dead_code)]` only for intentional stubs)
+  - Redundant closures → pass the function directly
+- **Tracing** — Add `#[tracing::instrument]` to all route handlers (skip large args like state, body)
+- **File ordering** (stepdown rule) — Source files read top-down:
+  1. `use` declarations
+  2. Public API (handlers, service methods)
+  3. Private helpers at the bottom in a `// ── Helpers ──` section
+  4. Within public API: caller appears above callee where possible (descend one abstraction level per function)
+  5. Exception: a helper used by exactly one handler can sit immediately below it for locality
+
+Example layout for `api/resources/routes.rs`:
+```rust
+use ...;
+
+pub async fn upload_resource(...) { ... }  // route handlers first
+pub async fn list_resources(...) { ... }
+
+// ── Helpers ──
+
+async fn validate_upload(...) { ... }
+fn extract_mime_type(...) { ... }
+```
+
 ## Configuration
 
 All runtime config comes from environment variables (see `core/config.rs`):
@@ -211,24 +255,68 @@ docker-compose logs -f irori
 
 The Dockerfile uses multi-stage build (builder → runtime) to keep the final image small.
 
+## Migrations
+
+Database migrations live in `src/main.rs` as CLI commands and in `src/core/db.rs` as schema initialization:
+
+```bash
+cargo run -- migrate --list              # Show available migrations
+cargo run -- migrate --name m001_init    # Dry run (default, no writes)
+cargo run -- migrate --name m001_init --apply  # Execute
+```
+
+**Rules:**
+- Migrations must accept a `dry_run: bool` parameter and perform **zero writes** when true
+- Log what *would* happen in dry-run mode (e.g., "Would add 50 users to collection X")
+- Migrations should be idempotent — skip records that are already migrated
+- Each migration is a separate function: `m001_init_schema`, `m002_add_columns`, etc.
+
+As the schema grows, consider migrating to `sqlx::migrate!` with `.sql` files, but Rust migrations offer flexibility.
+
+## Testing
+
+Tests must live in **separate files**, not inline in source files:
+
+- **No inline `#[cfg(test)] mod tests { ... }` blocks** — only acceptable form is a one-line module declaration
+- **Unit tests** — Put in `<stem>_tests.rs` next to the source file, and reference from source:
+
+  ```rust
+  #[cfg(test)]
+  #[path = "foo_tests.rs"]
+  mod tests;
+  ```
+
+- **Integration tests** — Go in `server/tests/` and `cli/tests/` directories
+- Use `_tests.rs` suffix (not `tests.rs`) to avoid collisions
+
+Run tests before committing:
+```bash
+cargo test
+RUST_BACKTRACE=1 cargo test  # With backtrace on failure
+```
+
 ## Git Workflow
 
 ```bash
 # Create feature branch
 git checkout -b feat/sync-protocol
 
-# Make changes, test
+# Make changes, format, lint, test
+cargo fmt
+cargo clippy -- -D warnings
 cargo test
 
-# Commit
+# Commit with meaningful message
 git add .
-git commit -m "Add sync protocol abstraction"
+git commit -m "Add sync protocol abstraction
 
-# Push and create PR (later)
+Implement trait-based sync protocol to allow pluggable protocol implementations."
+
+# Push and create PR
 git push origin feat/sync-protocol
 ```
 
-Meaningful commit messages with context (not just "fix bug").
+Meaningful commit messages: focus on the **why**, not the what (code shows the what).
 
 ## What's Next
 
@@ -243,21 +331,45 @@ See `README.md` for the current roadmap. High-priority items:
 7. ⏳ Add MCP tools for Claude integration
 8. ⏳ User authentication and JWT tokens
 
+## Cargo Features
+
+- `api` — HTTP API routes (enabled by default)
+- `mcp` — MCP protocol server (enabled by default)
+- Both can be independently disabled: `cargo build --no-default-features --features mcp`
+- **CI runs with default features (both enabled).**
+
+This allows optional compilation of heavy dependencies (like MCP libraries) when you only need the API.
+
 ## CI/CD
 
 GitHub Actions runs on every push to `main` and on pull requests:
 
-- **server-ci.yml** — Runs format check, clippy lints, and tests for the server
+- **server-ci.yml** — Runs format check, clippy lints, and tests for the server (always)
 - **cli-ci.yml** — Runs format check, clippy lints, and tests for the CLI (only when CLI code changes)
 
-Both jobs run in parallel with Rust caching to speed up builds. All checks must pass before merging to main.
+Both jobs run in parallel with Rust caching to speed up builds. **All checks must pass before merging to main.**
 
-Before pushing, run locally:
+### Before Pushing
+
+Always run these three checks locally:
+
+```bash
+cargo fmt -- --check      # Formatting (must match)
+cargo clippy -- -D warnings  # No warnings allowed
+cargo test                 # All tests pass
+```
+
+If `cargo fmt` says files need formatting, run it without `--check` to fix them:
 ```bash
 cargo fmt
-cargo clippy -- -D warnings
-cargo test
 ```
+
+### CLI Tips
+
+- `cargo check` — Fast syntax check (no codegen)
+- `RUST_BACKTRACE=1 cargo test` — Full backtrace on test failure
+- `cargo test -- --nocapture` — Show println! output during tests
+- `cargo clippy --all-targets` — Run on tests and examples too
 
 ## Questions?
 
