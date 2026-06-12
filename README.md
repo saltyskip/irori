@@ -6,6 +6,50 @@ Irori is a family-first photo and media repository, built in Rust. Named after t
 
 Built with Axum, PostgreSQL, and a protocol-based sync system that respects your privacy and lets you sync across devices, on your own infrastructure.
 
+## Quick Start (Local Development)
+
+Run all three components in parallel:
+
+```bash
+# Terminal 1: Start PostgreSQL + Irori server
+docker-compose up
+
+# Terminal 2: Start marketing site
+cd marketing
+npm install
+npm run dev
+
+# Terminal 3: Optional - start CLI (once server is up)
+cd cli
+cargo run
+```
+
+Then visit:
+- **Landing page**: http://localhost:3000
+- **API docs**: http://localhost:3000/api/docs
+- **Server health**: http://localhost:3000/health
+
+## Monorepo Structure
+
+```
+irori/
+├── server/              # Rust backend (Axum + PostgreSQL)
+│   ├── src/
+│   │   ├── api/        # HTTP API routes
+│   │   ├── mcp/        # MCP protocol (Claude integration)
+│   │   ├── services/   # Business logic (transport-agnostic)
+│   │   └── core/       # Database, storage, config
+│   └── Cargo.toml
+├── cli/                 # Rust CLI client for sync
+│   └── Cargo.toml
+├── marketing/          # Next.js landing page + Scalar API docs
+│   ├── src/
+│   ├── package.json
+│   └── README.md
+├── docker-compose.yml  # Local dev (PostgreSQL + server)
+└── CLAUDE.md          # Development guidelines
+```
+
 ## Vision
 
 Irori is an extensible platform for shared repositories of any kind. v1 focuses on family photo libraries, but the architecture is designed to support music libraries, document vaults, family trees, and more.
