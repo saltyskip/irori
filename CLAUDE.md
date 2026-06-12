@@ -74,10 +74,59 @@ Implementations:
 
 Selected at startup via `STORAGE_BACKEND` config.
 
+## Models Separation (Architectural Rule)
+
+**All public data types live in `models.rs` files, never inline in implementation files.**
+
+This is **strict**—no exceptions, no judgment calls. The reason: it keeps data types organized, prevents drift, and makes the architecture clear.
+
+**Pattern:**
+```
+services/foo/
+├── mod.rs          # Trait definitions and implementations only
+└── models.rs       # All pub structs, enums, request/response types
+```
+
+**In `models.rs`:**
+- Data transfer objects (DTOs): `CreateFooRequest`, `UpdateFooRequest`
+- Domain models: `Foo`, `FooDetails`
+- Enums: `FooStatus`, `FooType`
+- Any other `pub struct` or `pub enum`
+
+**In `mod.rs`:**
+- Trait definitions: `pub trait FooService { ... }`
+- Re-exports: `pub use models::{Foo, CreateFooRequest};`
+- Helper functions (no `pub` data types)
+
+**Why this matters:**
+- Future developers see `pub use models::*` and know where to look
+- Data types can't drift—single definition, single place
+- Easier to find what affects API/MCP transport (look in any `models.rs`)
+
+**Enforced by convention.** If someone adds a `pub struct` directly in `mod.rs`, call it out in review and request they move it to `models.rs`.
+
 ## Adding a New Domain
 
-1. **Define the service trait** in `services/<name>.rs`:
+1. **Create `services/<name>/models.rs`** with all data types:
    ```rust
+   #[derive(Clone, Debug, Serialize, Deserialize)]
+   pub struct Foo {
+       pub id: Uuid,
+       // ...
+   }
+   
+   #[derive(Debug, Clone, Serialize, Deserialize)]
+   pub struct CreateFooRequest {
+       // ...
+   }
+   ```
+
+2. **Create `services/<name>/mod.rs`** with the trait and re-exports:
+   ```rust
+   pub mod models;
+   use async_trait::async_trait;
+   pub use models::{Foo, CreateFooRequest};
+   
    #[async_trait]
    pub trait FooService: Send + Sync {
        async fn create(...) -> Result<Foo>;
@@ -85,13 +134,13 @@ Selected at startup via `STORAGE_BACKEND` config.
    }
    ```
 
-2. **Create a repository** in `services/repos/foo_repo.rs` (implements trait)
+3. **Create a repository** in `services/repos/foo_repo.rs` (implements trait) — future phase
 
-3. **Add HTTP routes** in `api/foo/mod.rs` with `pub fn router() -> Router<Arc<AppState>>`
+4. **Add HTTP routes** in `api/foo/mod.rs` with `pub fn router() -> Router<Arc<AppState>>`
 
-4. **Add MCP tools** in `mcp/foo.rs` (thin wrappers around the same service)
+5. **Add MCP tools** in `mcp/foo.rs` (thin wrappers around the same service)
 
-5. **Register in** `app.rs` (add to `AppState`)
+6. **Register in** `app.rs` (add to `AppState`)
 
 ## Migrations
 
@@ -193,6 +242,22 @@ See `README.md` for the current roadmap. High-priority items:
 6. ⏳ Implement collections and sharing
 7. ⏳ Add MCP tools for Claude integration
 8. ⏳ User authentication and JWT tokens
+
+## CI/CD
+
+GitHub Actions runs on every push to `main` and on pull requests:
+
+- **server-ci.yml** — Runs format check, clippy lints, and tests for the server
+- **cli-ci.yml** — Runs format check, clippy lints, and tests for the CLI (only when CLI code changes)
+
+Both jobs run in parallel with Rust caching to speed up builds. All checks must pass before merging to main.
+
+Before pushing, run locally:
+```bash
+cargo fmt
+cargo clippy -- -D warnings
+cargo test
+```
 
 ## Questions?
 
